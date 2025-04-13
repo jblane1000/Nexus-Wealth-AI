@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Withdraw Funds - Nexus Wealth AI{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-secondary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-money-bill-wave me-2"></i>Withdraw Funds
+                </h4>
+            </div>
+            <div class="card-body p-4">
+                <p class="lead mb-4">
+                    Withdraw funds from your Nexus Wealth AI account.
+                </p>
+                
+                <div class="alert alert-info mb-4">
+                    <div class="d-flex">
+                        <div class="me-3">
+                            <i class="fas fa-wallet fa-2x"></i>
+                        </div>
+                        <div>
+                            <h5 class="alert-heading">Available Balance</h5>
+                            <p class="mb-0 fs-4">
+                                ${{ available_balance|round(2) }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <form method="POST" action="{{ url_for('withdraw') }}">
+                    <div class="mb-4">
+                        <label for="amount" class="form-label">Withdrawal Amount</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control form-control-lg" id="amount" name="amount" 
+                                   min="10" max="{{ available_balance }}" step="0.01" required 
+                                   placeholder="Enter amount to withdraw">
+                        </div>
+                        <div class="form-text">Minimum withdrawal: $10.00</div>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <div class="d-flex">
+                            <div class="me-3">
+                                <i class="fas fa-exclamation-triangle fa-2x"></i>
+                            </div>
+                            <div>
+                                <h5 class="alert-heading">Important</h5>
+                                <p class="mb-0">
+                                    Withdrawals may impact your investment strategy and progress toward your financial goals. 
+                                    Our AI will adjust your portfolio accordingly, potentially selling assets to maintain your
+                                    target allocation.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <div class="d-flex">
+                            <div class="me-3">
+                                <i class="fas fa-info-circle fa-2x"></i>
+                            </div>
+                            <div>
+                                <h5 class="alert-heading">Note</h5>
+                                <p class="mb-0">
+                                    This is a simulation. In a real-world application, withdrawals would be processed to 
+                                    your linked bank account with appropriate verification steps.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-secondary btn-lg" {% if available_balance <= 0 %}disabled{% endif %}>
+                            <i class="fas fa-check-circle me-2"></i>Complete Withdrawal
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer bg-light">
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-link">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                    </a>
+                    <a href="{{ url_for('deposit') }}" class="btn btn-outline-success">
+                        <i class="fas fa-exchange-alt me-1"></i>Switch to Deposit
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

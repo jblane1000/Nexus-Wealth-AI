@@ -1,0 +1,411 @@
+{% extends "base.html" %}
+
+{% block title %}Account Settings - Nexus Wealth AI{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2>
+            <i class="fas fa-cogs text-primary me-2"></i>Account Settings
+        </h2>
+        <p class="lead">Manage your account preferences and notifications.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Settings Menu</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                <a href="#general" class="list-group-item list-group-item-action active" data-bs-toggle="list">
+                    <i class="fas fa-user-cog me-2"></i>General Settings
+                </a>
+                <a href="#notifications" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                    <i class="fas fa-bell me-2"></i>Notifications
+                </a>
+                <a href="#trading" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                    <i class="fas fa-chart-line me-2"></i>Trading Preferences
+                </a>
+                <a href="#security" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                    <i class="fas fa-shield-alt me-2"></i>Security
+                </a>
+                <a href="#risk" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                    <i class="fas fa-tachometer-alt me-2"></i>Risk Profile
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-9 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="tab-content">
+                    <!-- General Settings -->
+                    <div class="tab-pane fade show active" id="general">
+                        <h4 class="mb-4">General Settings</h4>
+                        
+                        <form method="POST" action="{{ url_for('settings') }}">
+                            <div class="mb-4">
+                                <h5>Account Information</h5>
+                                <hr>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Full Name</label>
+                                        <input type="text" class="form-control" value="{{ user.full_name }}" disabled>
+                                        <div class="form-text">Contact support to update your name</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Email Address</label>
+                                        <input type="email" class="form-control" value="{{ user.email }}" disabled>
+                                        <div class="form-text">Contact support to update your email</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Member Since</label>
+                                        <input type="text" class="form-control" value="{{ user.created_at.strftime('%B %d, %Y') }}" disabled>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Last Login</label>
+                                        <input type="text" class="form-control" value="{{ user.last_login.strftime('%B %d, %Y %H:%M') if user.last_login else 'N/A' }}" disabled>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <h5>Display Preferences</h5>
+                                <hr>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Currency Display</label>
+                                    <select class="form-select" disabled>
+                                        <option selected>USD ($)</option>
+                                        <option>CAD (C$)</option>
+                                        <option>EUR (€)</option>
+                                        <option>GBP (£)</option>
+                                    </select>
+                                    <div class="form-text">Only USD is supported in this demo</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Date Format</label>
+                                    <select class="form-select" disabled>
+                                        <option selected>MM/DD/YYYY</option>
+                                        <option>DD/MM/YYYY</option>
+                                        <option>YYYY-MM-DD</option>
+                                    </select>
+                                    <div class="form-text">This feature is not available in the demo</div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-end">
+                                <button type="submit" class="btn btn-primary" disabled>
+                                    <i class="fas fa-save me-2"></i>Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Notifications Settings -->
+                    <div class="tab-pane fade" id="notifications">
+                        <h4 class="mb-4">Notification Preferences</h4>
+                        
+                        <form method="POST" action="{{ url_for('settings') }}">
+                            <div class="mb-4">
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="notifications_enabled" name="notifications_enabled" {% if user.notifications_enabled %}checked{% endif %}>
+                                    <label class="form-check-label" for="notifications_enabled">Enable Notifications</label>
+                                </div>
+                                
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="email_notifications" name="email_notifications" {% if user.email_notifications %}checked{% endif %}>
+                                    <label class="form-check-label" for="email_notifications">Email Notifications</label>
+                                </div>
+                                
+                                <hr>
+                                
+                                <h6 class="mt-4 mb-3">Notify me about:</h6>
+                                
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="notify_deposits" checked>
+                                    <label class="form-check-label" for="notify_deposits">Deposits and withdrawals</label>
+                                </div>
+                                
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="notify_trades" checked>
+                                    <label class="form-check-label" for="notify_trades">Trades executed by AI</label>
+                                </div>
+                                
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="notify_portfolio" checked>
+                                    <label class="form-check-label" for="notify_portfolio">Major portfolio changes (>5%)</label>
+                                </div>
+                                
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="notify_goals" checked>
+                                    <label class="form-check-label" for="notify_goals">Goal progress updates</label>
+                                </div>
+                                
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="notify_market" checked>
+                                    <label class="form-check-label" for="notify_market">Market alerts and news</label>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-end">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Trading Preferences -->
+                    <div class="tab-pane fade" id="trading">
+                        <h4 class="mb-4">Trading Preferences</h4>
+                        
+                        <form method="POST" action="{{ url_for('settings') }}">
+                            <div class="mb-4">
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="trading_enabled" name="trading_enabled" {% if user.trading_enabled %}checked{% endif %}>
+                                    <label class="form-check-label" for="trading_enabled">Enable AI Trading</label>
+                                    <div class="form-text">When disabled, the AI will not make any trades but will continue portfolio analysis</div>
+                                </div>
+                                
+                                <hr>
+                                
+                                <h6 class="mt-4 mb-3">Investment Preferences:</h6>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Maximum Single Trade Size (% of portfolio)</label>
+                                    <select class="form-select">
+                                        <option>1%</option>
+                                        <option>2%</option>
+                                        <option selected>5%</option>
+                                        <option>10%</option>
+                                        <option>15%</option>
+                                        <option>20%</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Trading Frequency</label>
+                                    <select class="form-select">
+                                        <option>Very Low (Monthly rebalancing)</option>
+                                        <option>Low (Bi-weekly rebalancing)</option>
+                                        <option selected>Medium (Weekly + opportunity-based)</option>
+                                        <option>High (Daily + opportunity-based)</option>
+                                        <option>Very High (Real-time, most responsive)</option>
+                                    </select>
+                                </div>
+                                
+                                <h6 class="mt-4 mb-3">Investment Restrictions:</h6>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Excluded Sectors</label>
+                                    <select class="form-select" multiple>
+                                        <option>Tobacco</option>
+                                        <option>Weapons & Defense</option>
+                                        <option>Gambling</option>
+                                        <option>Adult Entertainment</option>
+                                        <option>Fossil Fuels</option>
+                                        <option>Cannabis</option>
+                                    </select>
+                                    <div class="form-text">Hold Ctrl/Cmd to select multiple sectors</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Tax-Optimization</label>
+                                    <select class="form-select">
+                                        <option>None</option>
+                                        <option selected>Standard (Balance tax-efficiency with returns)</option>
+                                        <option>Aggressive (Prioritize tax-efficiency)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-end">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Security Settings -->
+                    <div class="tab-pane fade" id="security">
+                        <h4 class="mb-4">Security Settings</h4>
+                        
+                        <div class="mb-4">
+                            <h5>Password</h5>
+                            <hr>
+                            
+                            <form>
+                                <div class="mb-3">
+                                    <label for="current_password" class="form-label">Current Password</label>
+                                    <input type="password" class="form-control" id="current_password">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="new_password" class="form-label">New Password</label>
+                                    <input type="password" class="form-control" id="new_password">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="confirm_password" class="form-label">Confirm New Password</label>
+                                    <input type="password" class="form-control" id="confirm_password">
+                                </div>
+                                
+                                <div class="d-flex justify-content-end">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-key me-2"></i>Change Password
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h5>Two-Factor Authentication</h5>
+                            <hr>
+                            
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <p class="mb-0">Two-factor authentication is currently <span class="badge bg-danger">disabled</span></p>
+                                    <small class="text-muted">Add an extra layer of security to your account</small>
+                                </div>
+                                <button class="btn btn-success" disabled>
+                                    <i class="fas fa-shield-alt me-2"></i>Enable 2FA
+                                </button>
+                            </div>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>Two-factor authentication is not available in this demo
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h5>Session Management</h5>
+                            <hr>
+                            
+                            <p>You are currently logged in from:</p>
+                            
+                            <div class="list-group mb-3">
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-0">This device</h6>
+                                            <small class="text-muted">
+                                                <i class="fas fa-map-marker-alt me-1"></i>Ontario, Canada
+                                                <span class="mx-2">•</span>
+                                                <i class="fas fa-clock me-1"></i>Active now
+                                            </small>
+                                        </div>
+                                        <span class="badge bg-success">Current Session</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-end">
+                                <button class="btn btn-danger" disabled>
+                                    <i class="fas fa-sign-out-alt me-2"></i>Log Out All Other Devices
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Risk Profile Summary -->
+                    <div class="tab-pane fade" id="risk">
+                        <h4 class="mb-4">Risk Profile</h4>
+                        
+                        {% if risk_profile %}
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h5 class="card-title mb-0">Your Risk Profile: <span class="fw-bold text-primary">{{ risk_profile.risk_level }}</span></h5>
+                                    <span class="badge {% if risk_profile.risk_level == 'Conservative' %}bg-info{% elif risk_profile.risk_level == 'Moderate' %}bg-warning{% else %}bg-danger{% endif %} p-2">
+                                        Score: {{ risk_profile.risk_score }}/25
+                                    </span>
+                                </div>
+                                
+                                <div class="progress mb-4" style="height: 20px;">
+                                    <div class="progress-bar bg-info" role="progressbar" style="width: 33%;" aria-valuenow="33" aria-valuemin="0" aria-valuemax="100">Conservative</div>
+                                    <div class="progress-bar bg-warning" role="progressbar" style="width: 33%;" aria-valuenow="33" aria-valuemin="0" aria-valuemax="100">Moderate</div>
+                                    <div class="progress-bar bg-danger" role="progressbar" style="width: 34%;" aria-valuenow="34" aria-valuemin="0" aria-valuemax="100">Aggressive</div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6 mb-3">
+                                        <h6>Investment Experience</h6>
+                                        <p>{{ risk_profile.investment_experience }}</p>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <h6>Investment Horizon</h6>
+                                        <p>{{ risk_profile.investment_horizon }}</p>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <h6>Risk Tolerance</h6>
+                                        <p>{{ risk_profile.risk_tolerance }}</p>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <h6>Income Stability</h6>
+                                        <p>{{ risk_profile.income_stability }}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Emergency Funds</h6>
+                                        <p>{{ risk_profile.emergency_funds }}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Last Updated</h6>
+                                        <p>{{ risk_profile.updated_at.strftime('%B %d, %Y') }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-light">
+                                <div class="d-flex justify-content-end">
+                                    <a href="{{ url_for('risk_profile') }}" class="btn btn-primary">
+                                        <i class="fas fa-edit me-2"></i>Update Risk Profile
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    <i class="fas fa-robot fa-2x"></i>
+                                </div>
+                                <div>
+                                    <h5 class="alert-heading">AI Investment Approach</h5>
+                                    <p class="mb-0">
+                                        Based on your {{ risk_profile.risk_level|lower }} risk profile, our AI is using a 
+                                        {% if risk_profile.risk_level == 'Conservative' %}
+                                            capital preservation strategy with a focus on steady income and low volatility.
+                                        {% elif risk_profile.risk_level == 'Moderate' %}
+                                            balanced approach with moderate growth potential and manageable risk.
+                                        {% else %}
+                                            growth-oriented strategy aiming for higher returns with acceptance of higher volatility.
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-exclamation-circle text-warning fa-3x mb-3"></i>
+                            <h5>Risk Profile Not Completed</h5>
+                            <p class="mb-4">Complete your risk profile to enable AI-driven investment management tailored to your preferences.</p>
+                            <a href="{{ url_for('risk_profile') }}" class="btn btn-primary">
+                                <i class="fas fa-tasks me-2"></i>Complete Risk Profile
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,522 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Nexus Wealth AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        transition: transform 0.3s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+    .goal-progress {
+        height: 8px;
+    }
+    .recent-decision {
+        border-left: 4px solid #0d6efd;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="mb-4">Welcome, {{ current_user.full_name.split()[0] }}</h1>
+    </div>
+    <div class="col-md-4 text-end">
+        <h5>Portfolio Value: <span class="text-primary">${{ portfolio.total_value|round(2) }}</span></h5>
+        <p class="text-muted">Last updated: {{ portfolio.last_updated.strftime('%b %d, %Y %H:%M') }}</p>
+    </div>
+</div>
+
+<!-- Portfolio Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card h-100 border-primary">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2 text-muted">Total Value</h6>
+                <h3 class="card-title text-primary">${{ portfolio.total_value|round(2) }}</h3>
+                {% if portfolio_data.performance.daily > 0 %}
+                <p class="card-text text-success">
+                    <i class="fas fa-arrow-up me-1"></i> {{ portfolio_data.performance.daily }}% Today
+                </p>
+                {% elif portfolio_data.performance.daily < 0 %}
+                <p class="card-text text-danger">
+                    <i class="fas fa-arrow-down me-1"></i> {{ portfolio_data.performance.daily|abs }}% Today
+                </p>
+                {% else %}
+                <p class="card-text text-muted">
+                    <i class="fas fa-minus me-1"></i> 0.00% Today
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2 text-muted">Cash Balance</h6>
+                <h3 class="card-title">${{ portfolio.cash_balance|round(2) }}</h3>
+                <p class="card-text">
+                    <span class="text-muted">{{ portfolio_data.allocation.Cash|default(0) }}% of portfolio</span>
+                </p>
+            </div>
+            <div class="card-footer bg-transparent">
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('deposit') }}" class="btn btn-sm btn-outline-success">Deposit</a>
+                    <a href="{{ url_for('withdraw') }}" class="btn btn-sm btn-outline-secondary">Withdraw</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2 text-muted">Monthly Return</h6>
+                {% if portfolio_data.performance.monthly > 0 %}
+                <h3 class="card-title text-success">+{{ portfolio_data.performance.monthly }}%</h3>
+                {% elif portfolio_data.performance.monthly < 0 %}
+                <h3 class="card-title text-danger">{{ portfolio_data.performance.monthly }}%</h3>
+                {% else %}
+                <h3 class="card-title">0.00%</h3>
+                {% endif %}
+                <p class="card-text text-muted">Last 30 days</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2 text-muted">Risk Level</h6>
+                {% if risk_profile %}
+                <h3 class="card-title">{{ risk_profile.risk_level }}</h3>
+                <p class="card-text text-muted">Score: {{ risk_profile.risk_score }}/25</p>
+                {% else %}
+                <h3 class="card-title text-warning">Not Set</h3>
+                <p class="card-text">
+                    <a href="{{ url_for('risk_profile') }}" class="btn btn-sm btn-warning">Complete Profile</a>
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Asset Allocation -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">Asset Allocation</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="allocationChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Graph -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">Portfolio Performance</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="performanceChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Asset List -->
+    <div class="col-md-8 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">Portfolio Assets</h5>
+            </div>
+            <div class="card-body">
+                {% if portfolio_data.assets|length > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Name</th>
+                                <th class="text-end">Quantity</th>
+                                <th class="text-end">Price</th>
+                                <th class="text-end">Value</th>
+                                <th class="text-end">Allocation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for asset in portfolio_data.assets %}
+                            <tr>
+                                <td>{{ asset.symbol }}</td>
+                                <td>{{ asset.name }}</td>
+                                <td class="text-end">{{ asset.quantity }}</td>
+                                <td class="text-end">${{ asset.price|round(2) }}</td>
+                                <td class="text-end">${{ asset.value|round(2) }}</td>
+                                <td class="text-end">{{ asset.allocation|round(2) }}%</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-info-circle text-muted fa-3x mb-3"></i>
+                    <p class="lead">Your portfolio is currently empty</p>
+                    <p class="text-muted">Once you deposit funds, our AI will begin building your portfolio</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Goals Progress -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Financial Goals</h5>
+                <a href="{{ url_for('goals') }}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-plus me-1"></i> Add Goal
+                </a>
+            </div>
+            <div class="card-body">
+                {% if goals|length > 0 %}
+                <div class="list-group list-group-flush">
+                    {% for goal in goals %}
+                    <div class="list-group-item border-0 px-0">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <h6 class="mb-0">{{ goal.name }}</h6>
+                            <span class="badge {% if goal.priority == 'High' %}bg-danger{% elif goal.priority == 'Medium' %}bg-warning{% else %}bg-info{% endif %}">
+                                {{ goal.priority }}
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center small mb-2">
+                            <span>${{ goal.current_amount|round(2) }} of ${{ goal.target_amount|round(2) }}</span>
+                            <span>{{ goal.progress_percentage|round(1) }}%</span>
+                        </div>
+                        <div class="progress goal-progress">
+                            <div class="progress-bar {% if goal.priority == 'High' %}bg-danger{% elif goal.priority == 'Medium' %}bg-warning{% else %}bg-info{% endif %}" 
+                                role="progressbar" 
+                                style="width: {{ goal.progress_percentage }}%" 
+                                aria-valuenow="{{ goal.progress_percentage }}" 
+                                aria-valuemin="0" 
+                                aria-valuemax="100">
+                            </div>
+                        </div>
+                        <small class="text-muted">Target Date: {{ goal.target_date.strftime('%b %d, %Y') }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-bullseye text-muted fa-3x mb-3"></i>
+                    <p class="lead">No goals set yet</p>
+                    <p class="text-muted">Set financial goals to help the AI optimize your portfolio</p>
+                    <a href="{{ url_for('goals') }}" class="btn btn-primary">Set Your First Goal</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Transactions -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Transactions</h5>
+                <a href="{{ url_for('transactions') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if transactions|length > 0 %}
+                <div class="list-group list-group-flush">
+                    {% for tx in transactions %}
+                    <div class="list-group-item border-0 px-0">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-0">{{ tx.description }}</h6>
+                                <small class="text-muted">{{ tx.date.strftime('%b %d, %Y %H:%M') }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="{% if tx.type == 'DEPOSIT' %}text-success{% elif tx.type == 'WITHDRAWAL' %}text-danger{% elif tx.type == 'BUY' %}text-primary{% else %}text-info{% endif %}">
+                                    {% if tx.type == 'DEPOSIT' %}+{% elif tx.type == 'WITHDRAWAL' %}-{% endif %}
+                                    ${{ tx.amount|round(2) }}
+                                </span>
+                                <br>
+                                <span class="badge {% if tx.type == 'DEPOSIT' %}bg-success{% elif tx.type == 'WITHDRAWAL' %}bg-danger{% elif tx.type == 'BUY' %}bg-primary{% else %}bg-info{% endif %}">
+                                    {{ tx.type }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-exchange-alt text-muted fa-3x mb-3"></i>
+                    <p class="lead">No transactions yet</p>
+                    <p class="text-muted">Your transaction history will appear here</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Decisions -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">Recent AI Decisions</h5>
+            </div>
+            <div class="card-body">
+                <div id="ai-decisions-container">
+                    <!-- AI decisions will be loaded here via AJAX -->
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading AI decisions...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Load AI decisions via AJAX
+    $(document).ready(function() {
+        // Fetch AI decisions
+        $.ajax({
+            url: "{{ url_for('api_decisions') }}",
+            type: "GET",
+            dataType: "json",
+            success: function(response) {
+                displayAIDecisions(response);
+            },
+            error: function(error) {
+                console.error("Error fetching AI decisions:", error);
+                $("#ai-decisions-container").html(
+                    '<div class="text-center py-4">' +
+                    '<i class="fas fa-exclamation-circle text-warning fa-3x mb-3"></i>' +
+                    '<p class="lead">Unable to load AI decisions</p>' +
+                    '<p class="text-muted">Please try again later</p>' +
+                    '</div>'
+                );
+            }
+        });
+        
+        // Create allocation chart
+        const allocationData = {
+            {% for category, percentage in portfolio_data.allocation.items() %}
+            '{{ category }}': {{ percentage }},
+            {% endfor %}
+        };
+        
+        createAllocationChart(allocationData);
+        
+        // Create performance chart (simulated data for now)
+        createPerformanceChart();
+    });
+    
+    function displayAIDecisions(data) {
+        if (!data.decisions || data.decisions.length === 0) {
+            $("#ai-decisions-container").html(
+                '<div class="text-center py-4">' +
+                '<i class="fas fa-robot text-muted fa-3x mb-3"></i>' +
+                '<p class="lead">No AI decisions yet</p>' +
+                '<p class="text-muted">AI decisions will appear here once your portfolio is active</p>' +
+                '</div>'
+            );
+            return;
+        }
+        
+        let html = '<div class="list-group list-group-flush">';
+        
+        data.decisions.forEach(decision => {
+            let typeIcon = '';
+            switch (decision.type) {
+                case 'ALLOCATION_CHANGE':
+                    typeIcon = '<i class="fas fa-sliders-h"></i>';
+                    break;
+                case 'RISK_ADJUSTMENT':
+                    typeIcon = '<i class="fas fa-shield-alt"></i>';
+                    break;
+                case 'MARKET_RESPONSE':
+                    typeIcon = '<i class="fas fa-chart-line"></i>';
+                    break;
+                default:
+                    typeIcon = '<i class="fas fa-lightbulb"></i>';
+            }
+            
+            html += `
+                <div class="list-group-item border-0 px-3 py-3 recent-decision">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">${typeIcon} ${decision.type.replace('_', ' ')}</h6>
+                        <small class="text-muted">${formatTimestamp(decision.timestamp)}</small>
+                    </div>
+                    <p class="mb-2">${decision.description}</p>
+                    <div class="small">
+                        <strong>Actions:</strong>
+                        <ul class="mb-0 ps-3">
+                            ${decision.actions.map(action => `<li>${action}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        $("#ai-decisions-container").html(html);
+    }
+    
+    function formatTimestamp(timestamp) {
+        const date = new Date(timestamp);
+        return date.toLocaleString();
+    }
+    
+    function createAllocationChart(data) {
+        const ctx = document.getElementById('allocationChart').getContext('2d');
+        
+        const labels = Object.keys(data);
+        const values = Object.values(data);
+        
+        const backgroundColors = [
+            '#0d6efd', // Primary
+            '#6610f2', // Purple
+            '#6f42c1', // Indigo
+            '#d63384', // Pink
+            '#dc3545', // Danger
+            '#fd7e14', // Orange
+            '#ffc107', // Warning
+            '#198754', // Success
+            '#20c997', // Teal
+            '#0dcaf0', // Info
+        ];
+        
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: backgroundColors.slice(0, labels.length),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                return `${label}: ${value}%`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    function createPerformanceChart() {
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+        
+        // Simulated data - would be replaced with real API data
+        const dates = [];
+        const portfolioValues = [];
+        const benchmarkValues = [];
+        
+        // Generate dates for the last 30 days
+        const today = new Date();
+        for(let i = 30; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(today.getDate() - i);
+            dates.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+            
+            // Generate portfolio values starting at 5000 with some random fluctuation
+            const baseValue = 5000 + (1000 * (30 - i) / 30); // Gradually increases
+            const randomFactor = Math.random() * 100 - 50; // Random fluctuation
+            portfolioValues.push(baseValue + randomFactor);
+            
+            // Generate benchmark (S&P 500) values with different fluctuation
+            const benchmarkBase = 5000 + (800 * (30 - i) / 30);
+            const benchmarkRandom = Math.random() * 80 - 40;
+            benchmarkValues.push(benchmarkBase + benchmarkRandom);
+        }
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [
+                    {
+                        label: 'Your Portfolio',
+                        data: portfolioValues,
+                        borderColor: '#0d6efd',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    },
+                    {
+                        label: 'S&P 500',
+                        data: benchmarkValues,
+                        borderColor: '#6c757d',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            maxTicksLimit: 10
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.dataset.label || '';
+                                const value = context.parsed.y;
+                                return `${label}: $${value.toLocaleString()}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

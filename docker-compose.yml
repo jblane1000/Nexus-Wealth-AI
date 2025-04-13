@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  web_ui:
+    build: ./web_ui
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./web_ui:/app
+    environment:
+      - AI_CORE_URL=http://ai_core:5000
+    networks:
+      - nexus_network
+    depends_on:
+      - ai_core
+
+  ai_core:
+    build: ./ai_core
+    volumes:
+      - ./ai_core:/app
+    environment:
+      - VECTOR_DB_HOST=vector_db
+      - VECTOR_DB_PORT=6333
+    networks:
+      - nexus_network
+    depends_on:
+      - vector_db
+
+  worker_ai_equity:
+    build: ./worker_ai_equity
+    volumes:
+      - ./worker_ai_equity:/app
+    environment:
+      - MCU_URL=http://ai_core:5000/mcu
+    networks:
+      - nexus_network
+    depends_on:
+      - ai_core
+
+  worker_ai_crypto:
+    build: ./worker_ai_crypto
+    volumes:
+      - ./worker_ai_crypto:/app
+    environment:
+      - MCU_URL=http://ai_core:5000/mcu
+    networks:
+      - nexus_network
+    depends_on:
+      - ai_core
+
+  worker_ai_risk:
+    build: ./worker_ai_risk
+    volumes:
+      - ./worker_ai_risk:/app
+    environment:
+      - MCU_URL=http://ai_core:5000/mcu
+    networks:
+      - nexus_network
+    depends_on:
+      - ai_core
+
+  vector_db:
+    image: qdrant/qdrant
+    ports:
+      - "6333:6333"
+    volumes:
+      - vector_db_data:/qdrant/storage
+    networks:
+      - nexus_network
+
+  timeseries_db:
+    image: influxdb:latest
+    ports:
+      - "8086:8086"
+    volumes:
+      - timeseries_db_data:/var/lib/influxdb2
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=nexus
+      - DOCKER_INFLUXDB_INIT_PASSWORD=nexuspassword
+      - DOCKER_INFLUXDB_INIT_ORG=nexuswealth
+      - DOCKER_INFLUXDB_INIT_BUCKET=market_data
+    networks:
+      - nexus_network
+
+  relational_db:
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    volumes:
+      - relational_db_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=nexus
+      - POSTGRES_PASSWORD=nexuspassword
+      - POSTGRES_DB=nexus_wealth
+    networks:
+      - nexus_network
+
+networks:
+  nexus_network:
+    driver: bridge
+
+volumes:
+  vector_db_data:
+  timeseries_db_data:
+  relational_db_data:

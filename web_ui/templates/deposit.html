@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Deposit Funds - Nexus Wealth AI{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-money-bill-wave me-2"></i>Deposit Funds
+                </h4>
+            </div>
+            <div class="card-body p-4">
+                <p class="lead mb-4">
+                    Add funds to your Nexus Wealth AI account to begin or increase your investments.
+                </p>
+                
+                <form method="POST" action="{{ url_for('deposit') }}">
+                    <div class="mb-4">
+                        <label for="amount" class="form-label">Deposit Amount</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control form-control-lg" id="amount" name="amount" 
+                                   min="100" step="0.01" required placeholder="Enter amount to deposit">
+                        </div>
+                        <div class="form-text">Minimum deposit: $100.00</div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <div class="d-flex">
+                            <div class="me-3">
+                                <i class="fas fa-info-circle fa-2x"></i>
+                            </div>
+                            <div>
+                                <h5 class="alert-heading">Note</h5>
+                                <p class="mb-0">
+                                    This is a simulation. In a real-world application, you would be directed to a secure payment 
+                                    gateway to complete your deposit via bank transfer, credit card, or other payment methods.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-check-circle me-2"></i>Complete Deposit
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer bg-light">
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-link">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                    </a>
+                    <a href="{{ url_for('withdraw') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-exchange-alt me-1"></i>Switch to Withdraw
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}Transaction History - Nexus Wealth AI{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2>
+            <i class="fas fa-exchange-alt text-primary me-2"></i>Transaction History
+        </h2>
+        <p class="lead">Review all financial transactions in your account.</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <div class="btn-group">
+            <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-filter me-1"></i> Filter
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="{{ url_for('transactions', type='all') }}">All Transactions</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{{ url_for('transactions', type='DEPOSIT') }}">Deposits Only</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('transactions', type='WITHDRAWAL') }}">Withdrawals Only</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('transactions', type='BUY') }}">Purchases Only</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('transactions', type='SELL') }}">Sales Only</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-body p-0">
+        {% if transactions.items|length > 0 %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                        <th class="text-end">Amount</th>
+                        <th class="text-end">Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tx in transactions.items %}
+                    <tr>
+                        <td>{{ tx.date.strftime('%b %d, %Y %H:%M') }}</td>
+                        <td>
+                            <span class="badge {% if tx.type == 'DEPOSIT' %}bg-success{% elif tx.type == 'WITHDRAWAL' %}bg-danger{% elif tx.type == 'BUY' %}bg-primary{% else %}bg-info{% endif %}">
+                                {{ tx.type }}
+                            </span>
+                        </td>
+                        <td>{{ tx.description }}</td>
+                        <td class="text-end {% if tx.type == 'DEPOSIT' or tx.type == 'SELL' %}text-success{% elif tx.type == 'WITHDRAWAL' or tx.type == 'BUY' %}text-danger{% endif %}">
+                            {% if tx.type == 'DEPOSIT' or tx.type == 'SELL' %}+{% elif tx.type == 'WITHDRAWAL' or tx.type == 'BUY' %}-{% endif %}
+                            ${{ tx.amount|round(2) }}
+                        </td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#txDetailsModal{{ tx.id }}">
+                                <i class="fas fa-info-circle"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    
+                    <!-- Transaction Details Modal -->
+                    <div class="modal fade" id="txDetailsModal{{ tx.id }}" tabindex="-1" aria-labelledby="txDetailsModalLabel{{ tx.id }}" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="txDetailsModalLabel{{ tx.id }}">Transaction Details</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <th style="width: 40%">Transaction ID:</th>
+                                            <td>{{ tx.id }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Date & Time:</th>
+                                            <td>{{ tx.date.strftime('%B %d, %Y %H:%M:%S') }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Type:</th>
+                                            <td>
+                                                <span class="badge {% if tx.type == 'DEPOSIT' %}bg-success{% elif tx.type == 'WITHDRAWAL' %}bg-danger{% elif tx.type == 'BUY' %}bg-primary{% else %}bg-info{% endif %}">
+                                                    {{ tx.type }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th>Amount:</th>
+                                            <td>${{ tx.amount|round(2) }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Description:</th>
+                                            <td>{{ tx.description }}</td>
+                                        </tr>
+                                        {% if tx.asset_symbol %}
+                                        <tr>
+                                            <th>Asset:</th>
+                                            <td>{{ tx.asset_name }} ({{ tx.asset_symbol }})</td>
+                                        </tr>
+                                        {% endif %}
+                                        {% if tx.quantity %}
+                                        <tr>
+                                            <th>Quantity:</th>
+                                            <td>{{ tx.quantity }}</td>
+                                        </tr>
+                                        {% endif %}
+                                        {% if tx.price %}
+                                        <tr>
+                                            <th>Price:</th>
+                                            <td>${{ tx.price|round(2) }}</td>
+                                        </tr>
+                                        {% endif %}
+                                    </table>
+                                    
+                                    {% if tx.type == 'BUY' or tx.type == 'SELL' %}
+                                    <div class="alert alert-info mt-3">
+                                        <div class="d-flex">
+                                            <div class="me-3">
+                                                <i class="fas fa-robot fa-2x"></i>
+                                            </div>
+                                            <div>
+                                                <h5 class="alert-heading">AI Decision</h5>
+                                                <p class="mb-0">
+                                                    This transaction was executed by our AI based on your financial goals and risk profile. 
+                                                    The decision was made to optimize your portfolio allocation and maximize potential returns 
+                                                    while adhering to your risk tolerance.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        <div class="d-flex justify-content-center py-3">
+            <nav aria-label="Transaction pagination">
+                <ul class="pagination">
+                    {% if transactions.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('transactions', page=transactions.prev_num) }}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in transactions.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if page_num %}
+                            {% if page_num == transactions.page %}
+                            <li class="page-item active"><a class="page-link" href="#">{{ page_num }}</a></li>
+                            {% else %}
+                            <li class="page-item"><a class="page-link" href="{{ url_for('transactions', page=page_num) }}">{{ page_num }}</a></li>
+                            {% endif %}
+                        {% else %}
+                            <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if transactions.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('transactions', page=transactions.next_num) }}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-exchange-alt text-muted fa-4x mb-3"></i>
+            <h3>No transactions found</h3>
+            <p class="lead mb-4">Your transaction history will appear here once you have activity in your account.</p>
+            <div class="d-flex justify-content-center gap-3">
+                <a href="{{ url_for('deposit') }}" class="btn btn-success">
+                    <i class="fas fa-money-bill-wave me-1"></i> Make a Deposit
+                </a>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Transaction Summary</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card text-center mb-3 mb-md-0">
+                    <div class="card-body">
+                        <h6 class="text-muted">Total Deposits</h6>
+                        <h3 class="text-success">${{ total_deposits|default(0)|round(2) }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center mb-3 mb-md-0">
+                    <div class="card-body">
+                        <h6 class="text-muted">Total Withdrawals</h6>
+                        <h3 class="text-danger">${{ total_withdrawals|default(0)|round(2) }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center mb-3 mb-md-0">
+                    <div class="card-body">
+                        <h6 class="text-muted">Purchases</h6>
+                        <h3 class="text-primary">${{ total_purchases|default(0)|round(2) }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6 class="text-muted">Sales</h6>
+                        <h3 class="text-info">${{ total_sales|default(0)|round(2) }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
